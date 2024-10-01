@@ -164,3 +164,5 @@ cython_debug/
 # config files
 *_config.yaml
 *_session.json
+*.key
+.env

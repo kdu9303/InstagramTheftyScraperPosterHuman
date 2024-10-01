@@ -1,6 +1,7 @@
+import os
 import json
 import logging
-import os
+import traceback
 from instagrapi import Client
 from cryptography.fernet import Fernet
 from rich.console import Console
@@ -72,7 +73,7 @@ def relogin(client, username, password, session_file):
         client.relogin()
         update_session_file(client, session_file)
         console.print(f"[bold green]Re-logged in successfully[/bold green]")
-    except Exception as e:
-        logging.error(f"Re-login failed: {e}")
-        console.print(f"[bold red]Re-login failed: {e}. Attempting fresh login...[/bold red]")
+    except Exception:
+        logging.error(f"Re-login failed: {traceback.format_exc()}")
+        console.print(f"[bold red]Re-login failed: {traceback.format_exc()}. Attempting fresh login...[/bold red]")
         perform_login(client, username, password, session_file)

@@ -157,7 +157,7 @@ def save_config(config, username, filename=None):
         filename = os.path.join(CONFIG_DIR, f"{username}_config.yaml")  # Save config for specific user
 
     try:
-        with open(filename, 'w') as file:
+        with open(filename, 'w',encoding='utf-8') as file:
             yaml.dump(config, file)
         console.print(f"[bold green]Configuration saved to {filename}[/bold green]")
         logging.info(f"Configuration saved to {filename}")
@@ -173,7 +173,7 @@ def load_config(username, filename=None):
 
     if os.path.exists(filename):
         try:
-            with open(filename, 'r') as file:
+            with open(filename, 'r', encoding='utf-8') as file:
                 config = yaml.safe_load(file)
             console.print(f"[bold green]Configuration loaded from {filename}[/bold green]")
             return config
