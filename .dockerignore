@@ -1,0 +1,9 @@
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.log
+
+# 폴더
+__pycache__
+2FA_DEV/

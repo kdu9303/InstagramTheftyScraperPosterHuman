@@ -39,6 +39,22 @@ HOURLY_FOLLOW_COUNT = 0
 LAST_RESET = datetime.now()
 LAST_HOURLY_RESET = datetime.now()
 
+# 새로운 상수 추가
+MIN_ACTION_DELAY = 15 * 60
+MAX_ACTION_DELAY = 30 * 60
+DAILY_ACTION_LIMIT = 100  # 일일 총 액션 제한
+SESSION_ACTION_LIMIT = 50  # 세션당 액션 제한
+SESSION_DURATION = 4 * 60 * 60  # 2시간
+
+# 새로운 전역 변수
+TOTAL_DAILY_ACTIONS = 0
+SESSION_ACTIONS = 0
+SESSION_START_TIME = datetime.now()
+
+
+def random_delay():
+    return random.uniform(MIN_ACTION_DELAY, MAX_ACTION_DELAY)
+
 
 def is_user_following(client, username) -> bool:
     result = client.search_following(client.user_id, username)
@@ -51,12 +67,10 @@ def is_user_follower(client, username) -> bool:
 
 
 def is_following_each_other(client, username) -> bool:
-
     is_following = is_user_following(client, username)
-    sleep_time = random.uniform(2, 4)
+    sleep_time = random.uniform(10, 30)
     sleep(sleep_time)
     is_follower = is_user_follower(client, username)
-
     return is_following and is_follower
 
 
@@ -77,8 +91,93 @@ def get_new_media_list(client, tags):
     return action(random_tag)
 
 
+def perform_comment_action(client, media_id, prompt_string, comment_count):
+    """댓글 로직"""
+    if comment_count < 200:
+        comment_generated = LLM_COMMENT_GENERATOR.process_llm(prompt_string)
+        comment_text = comment_generated.content
+        # client.media_comment(media_id, comment_text)
+        console.print(
+            f"[bold pink]Commented on media: {media_id} with text: \n{comment_text}.[/bold pink]"
+        )
+        return comment_count + 1
+    else:
+        console.print(
+            "[bold yellow]Daily comment limit reached. Skipping comment.[/bold yellow]"
+        )
+        return comment_count
+
+
+def perform_like_action(client, media_id, like_count):
+    """좋아요 로직"""
+    if like_count < 1000:
+        # client.media_like(media_id)
+        console.print(f"[bold yellow]Liked media: {media_id}.[/bold yellow]")
+        return like_count + 1
+    else:
+        console.print(
+            "[bold yellow]Daily like limit reached. Skipping like.[/bold yellow]"
+        )
+        return like_count
+
+
+def perform_follow_action(client, user_pk, follow_count, hourly_follow_count):
+    """팔로잉 로직"""
+    if follow_count < 200 and hourly_follow_count < 10:
+        # client.user_follow(user_pk)
+        console.print(f"[bold white]Followed user: {user_pk}.[/bold white]")
+        return follow_count + 1, hourly_follow_count + 1
+    else:
+        if follow_count >= 200:
+            console.print(
+                "[bold yellow]Daily follow limit reached. Skipping follow.[/bold yellow]"
+            )
+        return follow_count, hourly_follow_count
+
+
+def simulate_profile_view(client, username):
+    try:
+        user_info = client.user_info_by_username(username)
+        console.print(
+            f"[bold cyan]Viewed profile of user: {user_info.username}[/bold cyan]"
+        )
+        sleep(random.uniform(5, 20))  # 프로필 보는 시간 시뮬레이션
+    except Exception as e:
+        console.print(f"[bold red]Error viewing profile: {str(e)}[/bold red]")
+
+
+def simulate_story_view(client, user_pk):
+    try:
+        stories = client.user_stories(user_pk)
+        if stories:
+            console.print(
+                f"[bold cyan]Viewed story of user: {stories[0].user.username}[/bold cyan]"
+            )
+            sleep(random.uniform(2, 10))  # 스토리 보는 시간 시뮬레이션
+    except Exception as e:
+        console.print(f"[bold red]Error viewing story: {str(e)}[/bold red]")
+
+
 def perform_human_actions(client, tags, login_username, login_password, session_file):
-    global MEDIA_LIST, MEDIA_COUNT, CONSECUTIVE_ERRORS, LIKE_COUNT, COMMENT_COUNT, FOLLOW_COUNT, HOURLY_FOLLOW_COUNT, LAST_RESET, LAST_HOURLY_RESET
+    global MEDIA_LIST, MEDIA_COUNT, CONSECUTIVE_ERRORS, LIKE_COUNT, COMMENT_COUNT, FOLLOW_COUNT, HOURLY_FOLLOW_COUNT, LAST_RESET, LAST_HOURLY_RESET, TOTAL_DAILY_ACTIONS, SESSION_ACTIONS, SESSION_START_TIME
+
+    # 일일 및 세션 제한 확인
+    if TOTAL_DAILY_ACTIONS >= DAILY_ACTION_LIMIT:
+        console.print(
+            "[bold red]Daily action limit reached. Ending session.[/bold red]"
+        )
+        return
+
+    if (
+        SESSION_ACTIONS >= SESSION_ACTION_LIMIT
+        or (datetime.now() - SESSION_START_TIME).total_seconds() >= SESSION_DURATION
+    ):
+        console.print(
+            "[bold yellow]Session limit reached. Taking a break.[/bold yellow]"
+        )
+        sleep(random.uniform(1 * 60 * 60, 3 * 60 * 60))  # 1-3시간 휴식
+        SESSION_ACTIONS = 0
+        SESSION_START_TIME = datetime.now()
 
     # 일일 리셋 확인
     now = datetime.now()
@@ -86,6 +185,7 @@ def perform_human_actions(client, tags, login_username, login_password, session_
         LIKE_COUNT = 0
         COMMENT_COUNT = 0
         FOLLOW_COUNT = 0
+        TOTAL_DAILY_ACTIONS = 0
         LAST_RESET = now
 
     # 시간당 팔로우 리셋 확인
@@ -104,6 +204,9 @@ def perform_human_actions(client, tags, login_username, login_password, session_
         return
 
     try:
+        # 미디어 선택 전 랜덤 지연
+        sleep(random_delay())
+
         media = random.choice(MEDIA_LIST)
         MEDIA_COUNT += 1
 
@@ -128,20 +231,20 @@ def perform_human_actions(client, tags, login_username, login_password, session_
         VISITED_CACHE[user_pk] = media_user_id
         console.print(f"[bold green]New user visited: {media_user_id}[/bold green]")
 
-        sleep_time = random.uniform(10, 20)
-        sleep(sleep_time)
+        sleep(random.uniform(5,10))
 
         # 유저 팔로워 수가 많은 경우 처리
-        user_follower_max = 4000
-        user_follower_count = client.user_info(user_pk).model_dump()["follower_count"]
+        user_follower_max = 5000
+        user_follower_count = client.user_info_by_username(media_user_id).model_dump()[
+            "follower_count"
+        ]
         if user_follower_count > user_follower_max:
             console.print(
                 f"[bold green]유저의 팔로워 수 조건 초과로 다음 게시물로 넘어갑니다[/bold green]"
             )
             return
 
-        sleep_time = random.uniform(5, 10)
-        sleep(sleep_time)
+        sleep(random_delay())
 
         is_follower_following = is_following_each_other(client, media_user_id)
         if is_follower_following:
@@ -160,52 +263,42 @@ def perform_human_actions(client, tags, login_username, login_password, session_
         prompt_string = "\n\n".join(prompt_parts)
         console.print(f"[bold cyan]{prompt_string}[/bold cyan]")
 
-        sleep_time = random.uniform(3, 6)
-        sleep(sleep_time)
+        sleep(random_delay())
+
+        # 댓글, 좋아요, 팔로우 액션 전 추가 검사
+        if random.random() < 0.4:  # 40% 확률로 프로필 보기
+            simulate_profile_view(client, media_user_id)
+            TOTAL_DAILY_ACTIONS += 1
+            SESSION_ACTIONS += 1
+
+        if random.random() < 0.3:  # 30% 확률로 스토리 보기
+            simulate_story_view(client, user_pk)
+            TOTAL_DAILY_ACTIONS += 1
+            SESSION_ACTIONS += 1
 
         # 댓글 로직
-        if COMMENT_COUNT < 200:
-            comment_generated = LLM_COMMENT_GENERATOR.process_llm(prompt_string)
-            comment_text = comment_generated.content
-            # client.media_comment(media_id, comment_text)
-            COMMENT_COUNT += 1
-            console.print(
-                f"[bold pink]Commented on media: {media_id} with text: \n{comment_text}.[/bold pink]"
-            )
-        else:
-            console.print(
-                "[bold yellow]Daily comment limit reached. Skipping comment.[/bold yellow]"
-            )
-
-        sleep_time = random.uniform(10, 20)
-        sleep(sleep_time)
+        COMMENT_COUNT = perform_comment_action(
+            client, media_id, prompt_string, COMMENT_COUNT
+        )
+        TOTAL_DAILY_ACTIONS += 1
+        SESSION_ACTIONS += 1
+        sleep(random_delay())
 
         # 좋아요 로직
-        if LIKE_COUNT < 1000:
-            # client.media_like(media_id)
-            LIKE_COUNT += 1
-            console.print(f"[bold yellow]Liked media: {media_id}.[/bold yellow]")
-        else:
-            console.print(
-                "[bold yellow]Daily like limit reached. Skipping like.[/bold yellow]"
-            )
-
-        sleep_time = random.uniform(10, 20)
-        sleep(sleep_time)
+        LIKE_COUNT = perform_like_action(client, media_id, LIKE_COUNT)
+        TOTAL_DAILY_ACTIONS += 1
+        SESSION_ACTIONS += 1
+        sleep(random_delay())
 
         # 팔로우 로직
-        if FOLLOW_COUNT < 200 and HOURLY_FOLLOW_COUNT < 10:
-            # client.user_follow(user_pk)
-            FOLLOW_COUNT += 1
-            HOURLY_FOLLOW_COUNT += 1
-            console.print(f"[bold white]Followed user: {user_pk}.[/bold white]")
-        else:
-            if FOLLOW_COUNT >= 200:
-                console.print(
-                    "[bold yellow]Daily follow limit reached. Skipping follow.[/bold yellow]"
-                )
+        FOLLOW_COUNT, HOURLY_FOLLOW_COUNT = perform_follow_action(
+            client, user_pk, FOLLOW_COUNT, HOURLY_FOLLOW_COUNT
+        )
+        TOTAL_DAILY_ACTIONS += 1
+        SESSION_ACTIONS += 1
 
-        sleep_time = random.uniform(10, 20)
+        # 액션 후 랜덤 지연
+        sleep_time = random.uniform(5 * 60, 15 * 60)  # 5-15분
         console.print(
             f"[bold yellow]Sleeping for {sleep_time:.2f} seconds to mimic human behavior.[/bold yellow]"
         )
@@ -215,8 +308,10 @@ def perform_human_actions(client, tags, login_username, login_password, session_
         CONSECUTIVE_ERRORS = 0
 
     except LoginRequired:
-        relogin(client, login_username, login_password, session_file)
-        send_slack_message(level=LogLevel.ERROR, alert=AlertType.LOGIN_REQUIRED)
+        try:
+            relogin(client, login_username, login_password, session_file)
+        except Exception:
+            send_slack_message(level=LogLevel.ERROR, alert=AlertType.LOGIN_REQUIRED)
     except FeedbackRequired:
         console.print(
             f"[bold red]댓글 작성 금지 게시물입니다. 다음 게시글로 넘어갑니다[/bold red]"
@@ -244,10 +339,17 @@ def perform_human_actions(client, tags, login_username, login_password, session_
                 level=LogLevel.CRITICAL,
                 alert=AlertType.CHALLENGE_REQUIRED,
             )
-
-            console.print("[bold green]로그인 정보 갱신을 시도합니다[/bold green]")
-            relogin(client, login_username, login_password, session_file)
-            sys.exit(1)
+            # 챌린지 해결 대기시간
+            sleep(10 * 60)
+            console.print(
+                "[bold red]챌린지 인증과정 해결까지 일시 대기합니다...[/bold red]"
+            )
+            try:
+                console.print("[bold green]로그인 정보 갱신을 시도합니다[/bold green]")
+                relogin(client, login_username, login_password, session_file)
+                return
+            except ChallengeRequired:
+                sys.exit(1)
 
     except Exception:
         CONSECUTIVE_ERRORS += 1

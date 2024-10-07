@@ -2,17 +2,14 @@ import json
 import yaml
 import os
 import logging
-from cryptography.fernet import Fernet
 import getpass
 from instagrapi import Client
 from rich.console import Console
 from automate_auth import (
     perform_login,
-    decrypt_credentials,
     generate_key,
     encrypt_credentials,
 )  # Functions from auth.py
-from input_helpers import get_input, get_boolean_input
 from automate_device import DEVICE_INFO
 
 console = Console()

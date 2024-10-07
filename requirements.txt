@@ -2,6 +2,7 @@ instagrapi
 cryptography
 pyyaml
 rich
+pytz
 moviepy
 certifi
 chardet

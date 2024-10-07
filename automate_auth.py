@@ -2,7 +2,6 @@ import os
 import json
 import logging
 import traceback
-from instagrapi import Client
 from cryptography.fernet import Fernet
 from rich.console import Console
 

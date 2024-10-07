@@ -21,7 +21,7 @@ class AlertType(Enum):
     """CRITICAL OR ERROR 발생시"""
 
     CHALLENGE_REQUIRED = "자동화 프로그램 의심으로 유저 개입이 필요합니다.\n앱에서 직접 인증절차를 진행해주세요"
-    LOGIN_REQUIRED = "로그인 절차가 필요합니다."
+    LOGIN_REQUIRED = "재로그인에 실패하였습니다.\n로그인 절차가 필요합니다."
     FEEDBACKREQUIRED = "댓글 작성 금지 게시물에 접근하였습니다."
     CHALLENGE_UNKNOWN_STEP = "커뮤니티 가이드 위반 사항에 대한 조치가 있었습니다. 확인 요망"
     UNKNOWN = "원인 불명의 오류가 발생하였습니다."

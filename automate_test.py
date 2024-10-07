@@ -4,6 +4,7 @@ import signal
 import random
 import logging
 from instagrapi import Client
+import requests
 from rich.console import Console
 from time import sleep as time_sleep
 from datetime import datetime, timedelta
@@ -30,7 +31,9 @@ from utils import sleep_with_progress_bar
 from automate_tags import DEFAULT_TAGS
 from automate_device import DEVICE_INFO
 from automate_notification import LogLevel, AlertType, send_slack_message
-
+from instagrapi.exceptions import (
+    LoginRequired,
+)
 
 console = Console()
 
@@ -127,8 +130,8 @@ cl.delay_range = [2, 5]
 
 # Set proxy if available in configuration
 proxy = config.get("proxy")
-if proxy:
-    cl.set_proxy(proxy)
+# if proxy:
+#     cl.set_proxy(proxy)
 
 # Perform initial login
 session_file = os.path.join("user_sessions", f"{INSTAGRAM_USERNAME}_session.json")
@@ -172,106 +175,34 @@ def handle_rate_limit(client, func, *args, **kwargs):
     raise Exception("Max retries exceeded")
 
 
-# 유저 Follower Count
-FOLLOWER_COUNT = 0
+def test_proxy(client):
+    try:
+        # Instagram API를 통해 공개 프로필 정보 가져오기
+        username = "instagram"  # 테스트용 공개 계정
+        user_info = client.user_info_by_username(username)
+        print(f"Successfully fetched info for user: {username}")
+        print(f"Follower count: {user_info.follower_count}")
+        
+        # 프록시를 통한 현재 IP 확인 (외부 서비스 사용)
+        response = requests.get("https://api.ipify.org?format=json", proxies=client.private.proxies)
+        ip = response.json()['ip']
+        print(f"Current IP address (through proxy): {ip}")
 
-
-def reset_daily_limits():
-    global LIKE_COUNT, COMMENT_COUNT, FOLLOW_COUNT, LAST_RESET
-    LIKE_COUNT = COMMENT_COUNT = FOLLOW_COUNT = 0
-    LAST_RESET = datetime.now()
-    console.print("[bold green]Daily rate limits reset.[/bold green]")
-
-
-def reset_hourly_follow_limit():
-    global HOURLY_FOLLOW_COUNT, LAST_HOURLY_RESET
-    HOURLY_FOLLOW_COUNT = 0
-    LAST_HOURLY_RESET = datetime.now()
-    console.print("[bold green]Hourly follow limit reset.[/bold green]")
-
-
-def check_and_reset_limits():
-    now = datetime.now()
-    if now - LAST_RESET > timedelta(days=1):
-        reset_daily_limits()
-    if now - LAST_HOURLY_RESET > timedelta(hours=1):
-        reset_hourly_follow_limit()
-
-
-def check_daily_limits():
-    if LIKE_COUNT >= 1000 or COMMENT_COUNT >= 200 or FOLLOW_COUNT >= 200:
-        message = "Daily limit reached. Shutting down the program."
-        console.print(f"[bold red]{message}[/bold red]")
-        send_slack_message(level=LogLevel.WARNING, alert=AlertType.DAILY_LIMIT_REACHED)
-        return True
-    return False
-
-
-def update_follower_count(cl, runtime_hours):
-    global FOLLOWER_COUNT
-    new_follower_count = cl.user_info_by_username(cl.username).model_dump()["follower_count"]
-    console.print(f"[bold yellow]현재 팔로워 수: {new_follower_count}[/bold yellow]")
-
-    difference = new_follower_count - FOLLOWER_COUNT
-    if difference != 0:
-        change_msg = "증가하였습니다" if difference > 0 else "감소하였습니다"
-        message = (
-            f"{runtime_hours}시간동안 팔로워 수가: {abs(difference)}명 {change_msg}"
-        )
-        console.print(f"[bold blue]{message}[/bold blue]")
-        send_slack_message(
-            level=LogLevel.INFO,
-            follower_count=new_follower_count,
-            difference=difference,
-            message=message,
-        )
-        FOLLOWER_COUNT = new_follower_count
-    else:
-        console.print("[bold cyan]팔로워 수의 변화가 없습니다[/bold cyan]")
+    except Exception as e:
+        print(f"Error occurred: {e}")
 
 
 def main():
-    global FOLLOWER_COUNT
-
     try:
-        tags = DEFAULT_TAGS
-        start_time = datetime.now()
-        runtime_hours = 2
-        sleep_duration = random.uniform(
-            30 * 60, 60 * 60
-        )  # 30분에서 1시간 사이의 대기 시간
-
-        while True:
-            check_and_reset_limits()
-            if check_daily_limits():
-                sys.exit(0)
-
-            FOLLOWER_COUNT = cl.user_info_by_username(cl.username).model_dump()["follower_count"]
-
-            handle_rate_limit(
-                cl,
-                perform_human_actions,
-                cl,
-                tags,
-                INSTAGRAM_USERNAME,
-                INSTAGRAM_PASSWORD,
-                session_file,
-            )
-
-            sleep_time = random.uniform(55, 70)
-            sleep_with_progress_bar(sleep_time)
-            logging.debug(f"Sleeping for {sleep_time} seconds before next iteration")
-
-            if datetime.now() - start_time >= timedelta(hours=runtime_hours):
-                update_follower_count(cl, runtime_hours)
-                console.print(
-                    f"[bold yellow]{runtime_hours}시간 경과, 일정시간 동안 대기합니다...[/bold yellow]"
-                )
-                sleep_with_progress_bar(sleep_duration)
-                start_time = datetime.now()  # 시작 시간 재설정
+        # proxy server test
+        cl.set_proxy(proxy)
+        test_proxy(cl)
+        
 
     except KeyboardInterrupt:
         console.print("\n[bold red]Exiting program...[/bold red]")
+    except LoginRequired:
+        relogin(cl, INSTAGRAM_USERNAME, INSTAGRAM_PASSWORD, session_file)
 
 
 if __name__ == "__main__":
