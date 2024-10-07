@@ -40,11 +40,11 @@ LAST_RESET = datetime.now()
 LAST_HOURLY_RESET = datetime.now()
 
 # 새로운 상수 추가
-MIN_ACTION_DELAY = 15 * 60
-MAX_ACTION_DELAY = 30 * 60
-DAILY_ACTION_LIMIT = 100  # 일일 총 액션 제한
+MIN_ACTION_DELAY = 5 * 60
+MAX_ACTION_DELAY = 20 * 60
+DAILY_ACTION_LIMIT = 120  # 일일 총 액션 제한
 SESSION_ACTION_LIMIT = 50  # 세션당 액션 제한
-SESSION_DURATION = 4 * 60 * 60  # 2시간
+SESSION_DURATION = 4 * 60 * 60  # 세션 유지시간
 
 # 새로운 전역 변수
 TOTAL_DAILY_ACTIONS = 0
@@ -96,7 +96,7 @@ def perform_comment_action(client, media_id, prompt_string, comment_count):
     if comment_count < 200:
         comment_generated = LLM_COMMENT_GENERATOR.process_llm(prompt_string)
         comment_text = comment_generated.content
-        # client.media_comment(media_id, comment_text)
+        client.media_comment(media_id, comment_text)
         console.print(
             f"[bold pink]Commented on media: {media_id} with text: \n{comment_text}.[/bold pink]"
         )
@@ -111,7 +111,7 @@ def perform_comment_action(client, media_id, prompt_string, comment_count):
 def perform_like_action(client, media_id, like_count):
     """좋아요 로직"""
     if like_count < 1000:
-        # client.media_like(media_id)
+        client.media_like(media_id)
         console.print(f"[bold yellow]Liked media: {media_id}.[/bold yellow]")
         return like_count + 1
     else:
@@ -124,7 +124,7 @@ def perform_like_action(client, media_id, like_count):
 def perform_follow_action(client, user_pk, follow_count, hourly_follow_count):
     """팔로잉 로직"""
     if follow_count < 200 and hourly_follow_count < 10:
-        # client.user_follow(user_pk)
+        client.user_follow(user_pk)
         console.print(f"[bold white]Followed user: {user_pk}.[/bold white]")
         return follow_count + 1, hourly_follow_count + 1
     else:

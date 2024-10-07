@@ -1,5 +1,9 @@
 # docker buildx build --platform linux/amd64,linux/arm64,linux/x86_64 -t 192.168.0.17:5000/auto_instagram:0.0.5 --push --output=type=registry,registry.insecure=true -f ./Dockerfile .
 # docker build --tag  192.168.0.17:5000/auto_instagram:0.0.1 -f ./Dockerfile .
+
+# docker build --tag  localhost:5000/auto_instagram:0.0.4 -f ./Dockerfile .
+# docker push localhost:5000/auto_instagram:0.0.4
+
 # linux로 빌드
 # docker build --platform linux/x86_64 --tag 192.168.0.17:5000/auto_instagram:0.0.3 -f ./Dockerfile .
 # docker push 192.168.0.17:5000/auto_instagram:0.0.3
@@ -14,8 +18,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set environment variables for configurable files
-ENV SESSION_FILE_PATH="user_sessions/ddubuk_queen_session.json"
-ENV CONFIG_FILE_PATH="configs/ddubuk_queen_config.yaml"
+ENV SESSION_FILE_PATH="user_sessions/dodo.lunch_session.json"
+ENV CONFIG_FILE_PATH="configs/dodo.lunch_config.yaml"
 
 COPY $SESSION_FILE_PATH ./$SESSION_FILE_PATH
 COPY $CONFIG_FILE_PATH ./$CONFIG_FILE_PATH

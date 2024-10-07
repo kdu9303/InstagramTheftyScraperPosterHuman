@@ -137,7 +137,7 @@ def slack_notification_content(
 
 
 def send_slack_message(level, alert, **kwargs):
-    webhook_url = os.getenv("SLACK_WEBHOOK_URL_TEST")
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL_PROD")
     headers = {"Content-type": "application/json"}
 
     slack_data = slack_notification_content(level=level, alert=alert, **kwargs)
