@@ -227,6 +227,10 @@ def perform_human_actions(client, tags, login_username, login_password, session_
             console.print(
                 f"[bold cyan]Already visited user: {media_user_id}. Skipping....[/bold cyan]"
             )
+            if random.random() < 0.6:  # 60% 확률로 스토리 보기
+                simulate_story_view(client, user_pk)
+                TOTAL_DAILY_ACTIONS += 1
+                SESSION_ACTIONS += 1
             return
         VISITED_CACHE[user_pk] = media_user_id
         console.print(f"[bold green]New user visited: {media_user_id}[/bold green]")
