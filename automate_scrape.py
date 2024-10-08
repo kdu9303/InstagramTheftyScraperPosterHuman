@@ -148,7 +148,7 @@ def simulate_profile_view(client, username):
 
 def simulate_story_view(client, user_pk):
     try:
-        stories = client.user_stories(user_pk)
+        stories = client.user_stories(user_id=user_pk, amount=3)
         if stories:
             console.print(
                 f"[bold cyan]Viewed story of user: {stories[0].user.username}[/bold cyan]"
