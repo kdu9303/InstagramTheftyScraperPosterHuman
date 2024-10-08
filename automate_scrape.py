@@ -40,7 +40,7 @@ LAST_RESET = datetime.now()
 LAST_HOURLY_RESET = datetime.now()
 
 # 새로운 상수 추가
-MIN_ACTION_DELAY = 5 * 60
+MIN_ACTION_DELAY = 10 * 60
 MAX_ACTION_DELAY = 20 * 60
 DAILY_ACTION_LIMIT = 120  # 일일 총 액션 제한
 SESSION_ACTION_LIMIT = 50  # 세션당 액션 제한
@@ -231,7 +231,7 @@ def perform_human_actions(client, tags, login_username, login_password, session_
         VISITED_CACHE[user_pk] = media_user_id
         console.print(f"[bold green]New user visited: {media_user_id}[/bold green]")
 
-        sleep(random.uniform(5,10))
+        sleep(random.uniform(5, 10))
 
         # 유저 팔로워 수가 많은 경우 처리
         user_follower_max = 5000
@@ -340,10 +340,10 @@ def perform_human_actions(client, tags, login_username, login_password, session_
                 alert=AlertType.CHALLENGE_REQUIRED,
             )
             # 챌린지 해결 대기시간
-            sleep(10 * 60)
             console.print(
                 "[bold red]챌린지 인증과정 해결까지 일시 대기합니다...[/bold red]"
             )
+            sleep(10 * 60)
             try:
                 console.print("[bold green]로그인 정보 갱신을 시도합니다[/bold green]")
                 relogin(client, login_username, login_password, session_file)

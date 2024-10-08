@@ -1,13 +1,13 @@
 # docker buildx build --platform linux/amd64,linux/arm64,linux/x86_64 -t 192.168.0.17:5000/auto_instagram:0.0.5 --push --output=type=registry,registry.insecure=true -f ./Dockerfile .
 # docker build --tag  192.168.0.17:5000/auto_instagram:0.0.1 -f ./Dockerfile .
 
-# docker build --tag  localhost:5000/auto_instagram:0.0.4 -f ./Dockerfile .
-# docker push localhost:5000/auto_instagram:0.0.4
+# docker build --tag  localhost:5000/auto_instagram:0.0.5 -f ./Dockerfile .
+# docker push localhost:5000/auto_instagram:0.0.5
 
 # linux로 빌드
 # docker build --platform linux/x86_64 --tag 192.168.0.17:5000/auto_instagram:0.0.3 -f ./Dockerfile .
 # docker push 192.168.0.17:5000/auto_instagram:0.0.3
-# docker run -d --name instagram localhost:5000/auto_instagram:0.0.2
+
 
 FROM python:3.11-slim
 

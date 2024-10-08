@@ -209,7 +209,9 @@ def check_daily_limits():
 
 def update_follower_count(cl, runtime_hours):
     global FOLLOWER_COUNT
-    new_follower_count = cl.user_info_by_username(cl.username).model_dump()["follower_count"]
+    new_follower_count = cl.user_info_by_username(cl.username).model_dump()[
+        "follower_count"
+    ]
     console.print(f"[bold yellow]현재 팔로워 수: {new_follower_count}[/bold yellow]")
 
     difference = new_follower_count - FOLLOWER_COUNT
@@ -246,7 +248,9 @@ def main():
             if check_daily_limits():
                 sys.exit(0)
 
-            FOLLOWER_COUNT = cl.user_info_by_username(cl.username).model_dump()["follower_count"]
+            FOLLOWER_COUNT = cl.user_info_by_username(cl.username).model_dump()[
+                "follower_count"
+            ]
 
             handle_rate_limit(
                 cl,
@@ -258,7 +262,7 @@ def main():
                 session_file,
             )
 
-            sleep_time = random.uniform(55, 70)
+            sleep_time = random.uniform(2 * 60, 5 * 60)
             sleep_with_progress_bar(sleep_time)
             logging.debug(f"Sleeping for {sleep_time} seconds before next iteration")
 
